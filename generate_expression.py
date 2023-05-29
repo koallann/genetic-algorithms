@@ -1,5 +1,4 @@
 import random
-from difflib import SequenceMatcher
 
 
 OPERATIONS = ['+', '-', '*', '/']
@@ -15,7 +14,8 @@ class Expression():
         self.op = op
         self.left_node = left_node
         self.right_node = right_node
-    
+        self.cache = None
+
     def __str__(self):
         return f'({self.left_node} {self.op} {self.right_node})'
 
@@ -56,6 +56,8 @@ def fitness(expr, target):
 
     try:
         result = evaluate(expr)
+        expr.cache = result
+
         diff = abs(result - target)
     except ZeroDivisionError:
         diff = 1000 # large error
@@ -67,20 +69,8 @@ def diversity(population):
 
     for i in range(len(population)):
         for j in range(i+1, len(population)):
-            evaluation1 = None
-            evaluation2 = None
-
-            try:
-                evaluation1 = evaluate(population[i])
-            except ZeroDivisionError:
-                pass
-            
-            try:
-                evaluation2 = evaluate(population[j])
-            except ZeroDivisionError:
-                pass
-
-            if evaluation1 != evaluation2:
+            expr1, expr2 = population[i], population[j]
+            if expr1.cache != expr2.cache:
                 d += 1
     return d
 
@@ -127,6 +117,7 @@ def run(target):
     best_fitness_index = 0
 
     for _ in range(MAX_GENERATIONS):
+        fitnesses = list(map(lambda f : fitness(f, target), population))
         
         if diversity(population) > POPULATION_SIZE * 0.8:
             crossing_rate *= 1.1
@@ -135,9 +126,7 @@ def run(target):
             crossing_rate *= 0.9
             mutation_rate *= 1.1
 
-        fitnesses = list(map(lambda f : fitness(f, target), population))
         parent1, parent2 = select_parents(population, fitnesses)
-
         crossing_child = cross(parent1, parent2, crossing_rate)
         mutation_child = mutate(random.choice([parent1, parent2]), mutation_rate)
 
