@@ -6,7 +6,7 @@ OPERATIONS = ['+', '-', '*', '/']
 EXPRESSION_DEPTH = 3
 
 POPULATION_SIZE = 10
-MAX_GENERATIONS = 10000
+MAX_GENERATIONS = 5000
 
 
 class Expression():
@@ -95,7 +95,7 @@ def cross(expr1, expr2, crossing_rate):
 
 def mutate(expr, mutation_rate):
     if random.uniform(0, 1) < mutation_rate:
-        return generate_expression(EXPRESSION_DEPTH)
+        return expr
 
     left_node = None
     right_node = None
@@ -114,7 +114,6 @@ def run(target):
     mutation_rate = 0.2
 
     population = generate_population(POPULATION_SIZE)
-    best_fitness_index = 0
 
     for _ in range(MAX_GENERATIONS):
         fitnesses = list(map(lambda f : fitness(f, target), population))
@@ -130,21 +129,11 @@ def run(target):
         crossing_child = cross(parent1, parent2, crossing_rate)
         mutation_child = mutate(random.choice([parent1, parent2]), mutation_rate)
 
-        worst_fitness_index1 = 0
-        worst_fitness_index2 = 0
+        population = sorted(population, key=lambda expr: fitness(expr, target))
+        population[0] = crossing_child
+        population[1] = mutation_child
 
-        for i in range(POPULATION_SIZE):
-            if fitnesses[i] > fitnesses[best_fitness_index]:
-                best_fitness_index = i
-
-            if fitnesses[i] < fitnesses[worst_fitness_index1]:
-                worst_fitness_index2 = worst_fitness_index1
-                worst_fitness_index1 = i
-
-        population[worst_fitness_index1] = crossing_child
-        population[worst_fitness_index2] = mutation_child
-
-    return population[best_fitness_index]
+    return population[POPULATION_SIZE - 1]
 
 
 if __name__ == "__main__":
